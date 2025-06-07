@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inverted Index Demo - Dark Edition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            background: linear-gradient(45deg, #60a5fa, #a78bfa, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 25px;
+            background: rgba(51, 65, 85, 0.6);
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            border-left: 5px solid #60a5fa;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .section h2 {
+            color: #f1f5f9;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        input[type="text"], textarea {
+            flex: 1;
+            padding: 14px 18px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 2px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            font-size: 16px;
+            color: #e2e8f0;
+            transition: all 0.3s ease;
+            min-width: 200px;
+        }
+        
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: #60a5fa;
+            background: rgba(15, 23, 42, 0.95);
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+        }
+        
+        input[type="text"]::placeholder, textarea::placeholder {
+            color: #64748b;
+        }
+        
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        
+        button {
+            padding: 14px 28px;
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+            background: linear-gradient(45deg, #2563eb, #7c3aed);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .btn-success {
+            background: linear-gradient(45deg, #10b981, #059669);
+        }
+        
+        .btn-success:hover {
+            background: linear-gradient(45deg, #059669, #047857);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(45deg, #ef4444, #dc2626);
+        }
+        
+        .btn-danger:hover {
+            background: linear-gradient(45deg, #dc2626, #b91c1c);
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+        }
+        
+        .document {
+            background: rgba(15, 23, 42, 0.6);
+            padding: 20px;
+            margin: 12px 0;
+            border-radius: 12px;
+            border-left: 4px solid #10b981;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            transition: all 0.2s ease;
+        }
+        
+        .document:hover {
+            background: rgba(15, 23, 42, 0.8);
+            transform: translateX(5px);
+        }
+        
+        .document-id {
+            font-weight: bold;
+            color: #60a5fa;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+        
+        .document-content {
+            color: #cbd5e1;
+            line-height: 1.6;
+        }
+        
+        .index-display {
+            background: rgba(15, 23, 42, 0.8);
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .index-display::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .index-display::-webkit-scrollbar-track {
+            background: rgba(51, 65, 85, 0.3);
+            border-radius: 4px;
+        }
+        
+        .index-display::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.3);
+            border-radius: 4px;
+        }
+        
+        .index-display::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.5);
+        }
+        
+        .term {
+            background: rgba(6, 78, 59, 0.4);
+            padding: 12px 16px;
+            margin: 8px 0;
+            border-radius: 10px;
+            border-left: 3px solid #10b981;
+            transition: all 0.2s ease;
+        }
+        
+        .term:hover {
+            background: rgba(6, 78, 59, 0.6);
+            transform: translateX(5px);
+        }
+        
+        .term-word {
+            font-weight: bold;
+            color: #34d399;
+            font-size: 1.1em;
+        }
+        
+        .term-docs {
+            margin-left: 20px;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+        
+        .search-results {
+            background: rgba(7, 89, 133, 0.2);
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 15px;
+            border: 1px solid rgba(14, 165, 233, 0.2);
+        }
+        
+        .search-step {
+            margin: 12px 0;
+            padding: 12px 16px;
+            background: rgba(30, 58, 138, 0.3);
+            border-radius: 10px;
+            border-left: 3px solid #3b82f6;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #bfdbfe;
+        }
+        
+        .highlight {
+            background: linear-gradient(45deg, #f59e0b, #d97706);
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: #1f2937;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .stat {
+            text-align: center;
+            padding: 20px;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 12px;
+            min-width: 120px;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            transition: all 0.2s ease;
+        }
+        
+        .stat:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .stat-number {
+            font-size: 2.2em;
+            font-weight: bold;
+            background: linear-gradient(45deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .stat-label {
+            color: #94a3b8;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: #64748b;
+            font-style: italic;
+            padding: 30px;
+            background: rgba(51, 65, 85, 0.3);
+            border-radius: 12px;
+            border: 2px dashed rgba(148, 163, 184, 0.2);
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(96, 165, 250, 0.3);
+            border-radius: 50%;
+            border-top-color: #60a5fa;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: rgba(153, 27, 27, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .success {
+            background: rgba(5, 150, 105, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #6ee7b7;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+            
+            input[type="text"], textarea {
+                min-width: 100%;
+            }
+            
+            .stats {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+        }
+        
+        /* Glowing effects */
+        .glow {
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 5px rgba(96, 165, 250, 0.2);
+            }
+            to {
+                box-shadow: 0 0 20px rgba(96, 165, 250, 0.4);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Inverted Index Demo</h1>
+        <p class="subtitle">See how Elasticsearch indexes and searches documents in real-time - Dark Edition</p>
+        
+        <div class="section">
+            <h2>📝 Add Documents</h2>
+            <div class="input-group">
+                <input type="text" id="docId" placeholder="Document ID (e.g., doc1)" />
+                <textarea id="docContent" placeholder="Document content (e.g., 'The quick brown fox jumps over the lazy dog')"></textarea>
+                <button onclick="addDocument()">Add Document</button>
+            </div>
+            <button onclick="loadSampleData()" class="btn-success">Load Sample Data</button>
+            <button onclick="clearAllData()" class="btn-danger">Clear All Data</button>
+        </div>
+        
+        <div class="section">
+            <h2>📊 Document Collection</h2>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-number" id="docCount">0</div>
+                    <div class="stat-label">Documents</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" id="termCount">0</div>
+                    <div class="stat-label">Unique Terms</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" id="indexSize">0</div>
+                    <div class="stat-label">Index Entries</div>
+                </div>
+            </div>
+            <div id="documentList" class="empty-state">No documents added yet. Add some documents to see the magic happen!</div>
+        </div>
+        
+        <div class="section">
+            <h2>🔎 Search Engine</h2>
+            <div class="input-group">
+                <input type="text" id="searchQuery" placeholder="Search query (e.g., 'quick fox')" />
+                <button onclick="search()">Search</button>
+            </div>
+            <div id="searchResults"></div>
+        </div>
+        
+        <div class="section">
+            <h2>🗂️ Inverted Index Structure</h2>
+            <p style="margin-bottom: 15px; color: #94a3b8;">This is the core data structure that makes fast search possible:</p>
+            <div id="indexDisplay" class="index-display empty-state">Add documents to see the inverted index build automatically!</div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin + '/api';
+        
+        // Show loading state
+        function showLoading(buttonElement) {
+            const originalText = buttonElement.textContent;
+            buttonElement.innerHTML = '<span class="loading"></span>Loading...';
+            buttonElement.disabled = true;
+            return originalText;
+        }
+        
+        // Hide loading state
+        function hideLoading(buttonElement, originalText) {
+            buttonElement.innerHTML = originalText;
+            buttonElement.disabled = false;
+        }
+        
+        // Show message
+        function showMessage(message, type = 'success') {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type;
+            messageDiv.textContent = message;
+            
+            // Insert after the first section
+            const firstSection = document.querySelector('.section');
+            firstSection.insertAdjacentElement('afterend', messageDiv);
+            
+            setTimeout(() => messageDiv.remove(), 3000);
+        }
+        
+        // Add document
+        async function addDocument() {
+            const docId = document.getElementById('docId').value.trim();
+            const content = document.getElementById('docContent').value.trim();
+            
+            if (!docId || !content) {
+                showMessage('Please provide both document ID and content!', 'error');
+                return;
+            }
+            
+            const button = event.target;
+            const originalText = showLoading(button);
+            
+            try {
+                const response = await fetch(`${API_BASE}/documents`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ docId, content })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('docId').value = '';
+                    document.getElementById('docContent').value = '';
+                    showMessage(`Document "${docId}" added successfully!`);
+                    await refreshData();
+                } else {
+                    showMessage(result.error || 'Error adding document', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error: ' + error.message, 'error');
+            } finally {
+                hideLoading(button, originalText);
+            }
+        }
+        
+        // Search documents
+        async function search() {
+            const query = document.getElementById('searchQuery').value.trim();
+            if (!query) {
+                showMessage('Please enter a search query!', 'error');
+                return;
+            }
+            
+            const button = event.target;
+            const originalText = showLoading(button);
+            
+            try {
+                const response = await fetch(`${API_BASE}/search`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    displaySearchResults(result);
+                } else {
+                    showMessage(result.error || 'Search failed', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error: ' + error.message, 'error');
+            } finally {
+                hideLoading(button, originalText);
+            }
+        }
+        
+        // Display search results
+        function displaySearchResults(data) {
+            const container = document.getElementById('searchResults');
+            const { query, queryTerms, results, searchSteps, executionTime } = data;
+            
+            let html = '<div class="search-results">';
+            html += `<h3>🔍 Search Process (${executionTime}):</h3>`;
+            
+            searchSteps.forEach(step => {
+                html += `<div class="search-step">${step}</div>`;
+            });
+            
+            html += '<h3>📋 Results:</h3>';
+            
+            if (results.length === 0) {
+                html += '<div class="empty-state">No documents found matching your query.</div>';
+            } else {
+                results.forEach(result => {
+                    let highlightedContent = result.content;
+                    queryTerms.forEach(term => {
+                        const regex = new RegExp(`\\b${term}\\b`, 'gi');
+                        highlightedContent = highlightedContent.replace(regex, `<span class="highlight">${term}</span>`);
+                    });
+                    
+                    html += `
+                        <div class="document">
+                            <div class="document-id">📄 ${result.docId} (Score: ${result.score})</div>
+                            <div class="document-content">${highlightedContent}</div>
+                        </div>
+                    `;
+                });
+            }
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        // Load sample data
+        async function loadSampleData() {
+            const button = event.target;
+            const originalText = showLoading(button);
+            
+            try {
+                const response = await fetch(`${API_BASE}/sample-data`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showMessage(`${result.documentsAdded} sample documents loaded!`);
+                    await refreshData();
+                } else {
+                    showMessage(result.error || 'Error loading sample data', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error: ' + error.message, 'error');
+            } finally {
+                hideLoading(button, originalText);
+            }
+        }
+        
+        // Clear all data
+        async function clearAllData() {
+            if (!confirm('Are you sure you want to clear all documents?')) return;
+            
+            const button = event.target;
+            const originalText = showLoading(button);
+            
+            try {
+                // Get all documents first
+                const docsResponse = await fetch(`${API_BASE}/documents`);
+                const docsData = await docsResponse.json();
+                
+                // Delete each document
+                const deletePromises = Object.keys(docsData.documents).map(docId =>
+                    fetch(`${API_BASE}/documents/${docId}`, { method: 'DELETE' })
+                );
+                
+                await Promise.all(deletePromises);
+                showMessage('All documents cleared successfully!');
+                await refreshData();
+            } catch (error) {
+                showMessage('Error clearing data: ' + error.message, 'error');
+            } finally {
+                hideLoading(button, originalText);
+            }
+        }
+        
+        // Refresh all data
+        async function refreshData() {
+            try {
+                // Get documents and stats
+                const docsResponse = await fetch(`${API_BASE}/documents`);
+                const docsData = await docsResponse.json();
+                
+                // Get inverted index
+                const indexResponse = await fetch(`${API_BASE}/index`);
+                const indexData = await indexResponse.json();
+                
+                updateStats(docsData.stats);
+                updateDocumentList(docsData.documents);
+                updateIndexDisplay(indexData.invertedIndex);
+            } catch (error) {
+                console.error('Error refreshing data:', error);
+            }
+        }
+        
+        // Update statistics
+        function updateStats(stats) {
+            document.getElementById('docCount').textContent = stats.docCount;
+            document.getElementById('termCount').textContent = stats.termCount;
+            document.getElementById('indexSize').textContent = stats.indexSize;
+        }
+        
+        // Update document list
+        function updateDocumentList(documents) {
+            const container = document.getElementById('documentList');
+            
+            if (Object.keys(documents).length === 0) {
+                container.innerHTML = '<div class="empty-state">No documents added yet. Add some documents to see the magic happen!</div>';
+                return;
+            }
+            
+            let html = '';
+            Object.entries(documents).forEach(([docId, content]) => {
+                html += `
+                    <div class="document glow">
+                        <div class="document-id">📄 ${docId}</div>
+                        <div class="document-content">${content}</div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // Update inverted index display
+        function updateIndexDisplay(invertedIndex) {
+            const container = document.getElementById('indexDisplay');
+            
+            if (Object.keys(invertedIndex).length === 0) {
+                container.innerHTML = '<div class="empty-state">Add documents to see the inverted index build automatically!</div>';
+                return;
+            }
+            
+            let html = '';
+            Object.entries(invertedIndex)
+                  .sort(([a], [b]) => a.localeCompare(b))
+                  .forEach(([term, docs]) => {
+                      html += `
+                          <div class="term">
+                              <span class="term-word">"${term}"</span> →
+                              <div class="term-docs">[${docs.join(', ')}]</div>
+                          </div>
+                      `;
+                  });
+            
+            container.innerHTML = html;
+        }
+        
+        // Event listeners
+        document.getElementById('searchQuery').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') search();
+        });
+        
+        document.getElementById('docId').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') document.getElementById('docContent').focus();
+        });
+        
+        document.getElementById('docContent').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && e.ctrlKey) addDocument();
+        });
+        
+        // Load initial data on page load
+        document.addEventListener('DOMContentLoaded', refreshData);
+    </script>
+</body>
+</html>
